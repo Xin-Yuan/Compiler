@@ -16,6 +16,7 @@ int lookUP(char* s);
 %}
 %x COMMENT
 %x comment
+variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
 "("     {token("'('");}
 ")"	{token("')'");}
@@ -23,17 +24,25 @@ int lookUP(char* s);
 "}"	{token("'}'");}
 ";"	{token("';'");}
 
+"="	{token("'='");}
+">"	{token("'>'");}
+
 "fn"	{token("FN");}
 "println"	{token("PRINTLN")}
+"let"	{token("LET");}
+"mut"	{token("MUT");}
 "main"	{tokenString("id","main");insert("main");}
 
+[A-Za-z]+([A-Za-z]|[0-9])* {tokenString("id", yytext);insert(yytext);}
+[0-9]	{tokenInteger}
 \"(\\.|[^"\\])*\"	{tokenString("string",yytext)}
-"/*"	{BEGIN(COMMENT);}
-"*/"	{BEGIN(INITIAL);}
+"/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
+<COMMENT>"*/"	{ECHO;BEGIN(INITIAL);printf("\n");}
 <COMMENT>\n	{
-		LIST;
-        	printf("%d: %s", linenum++, buf);
+    		ECHO;
+        	printf("%d: ", linenum++);
         	buf[0] = '\0';
+                
 		}
 "//"	{printf("%d: ", linenum++);ECHO;BEGIN(comment);}
 <comment>\n	{BEGIN(INITIAL);ECHO;}
@@ -64,7 +73,7 @@ yylex();
 */
 fflush(yyout);
 printf("\nSymbol Table: \n");
-dump(symbolTable); 	
+dump(); 	
 exit(0);
 }
 
@@ -77,12 +86,20 @@ int lookUp(char* s)
             return i;
         }
     }
+    return -1;
 }
 
 void insert(char* s)
 {
     if(symbolCount<MAX_TOKEN)
-        symbolTable[symbolCount++] = s;
+    {
+        if(lookUp(s)!=-1)
+        {
+           
+        }
+        else
+          symbolTable[symbolCount++] = s;
+    }
     else
         printf("Error! Symbol Table is full");
 }
