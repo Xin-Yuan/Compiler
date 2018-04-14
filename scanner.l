@@ -1,12 +1,17 @@
 %{
+#include <stdio.h>
+#include <string.h>
 #define LIST     strcat(buf,yytext)
 #define token(t) {LIST; printf("<%s>\n",t);}
-#define tokenInteger(t,i) {LIST; printf("<%s:%d>\n",t,i);}
+#define tokenInteger(t,i) {LIST; printf("<%s:%s>\n",t,i);}
 #define tokenString(t,s) {LIST; printf("<%s:%s>\n",t,s);}
 
 #define MAX_LINE_LENG 256
 #define MAX_TOKEN 10000
+#define ID_LEN 100
 char* symbolTable[MAX_TOKEN];
+char* ident;
+char* tempstr;
 int symbolCount = 0;
 int linenum = 1;
 char buf[MAX_LINE_LENG];
@@ -23,18 +28,35 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 "{"	{token("'{'");}
 "}"	{token("'}'");}
 ";"	{token("';'");}
+":"	{token("':'");}
+","	{token("','");}
+"->"	{token("'->'");}
+
+"int"	{token("INT");}
+"float"	{token("FLOAT");}
+"if"	{token("IF");}
+"while"	{token("WHILE");}
+"else"  {token("ELSE");}
+"return"    {token("RETURN");}
+
+"+"	{token("+");}
+"-"	{token("-");}
 
 "="	{token("'='");}
 ">"	{token("'>'");}
+"<"	{token("'<'");}
+">="	{token(">=");}
+"<="	{token("<=");}
 
 "fn"	{token("FN");}
 "println"	{token("PRINTLN")}
+"print"	{token("PRINT");}
 "let"	{token("LET");}
 "mut"	{token("MUT");}
 "main"	{tokenString("id","main");insert("main");}
 
-[A-Za-z]+([A-Za-z]|[0-9])* {tokenString("id", yytext);insert(yytext);}
-[0-9]	{tokenInteger}
+[A-Za-z][A-Za-z0-9]* {tempstr = malloc(ID_LEN*sizeof(char));strcpy(tempstr,yytext);ident = tempstr;insert(ident);tokenString("id", yytext);}
+[0-9]+	{tokenInteger("Integer",yytext)}
 \"(\\.|[^"\\])*\"	{tokenString("string",yytext)}
 "/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
 <COMMENT>"*/"	{ECHO;BEGIN(INITIAL);printf("\n");}
@@ -81,10 +103,15 @@ int lookUp(char* s)
 {
     for(int i = 0;i<MAX_TOKEN;i++)
     {
-        if(symbolTable[i] == s)
-        {
-            return i;
-        }
+        if(symbolTable[i]!=NULL)
+	{
+            if(!strcmp(symbolTable[i],s))
+            {
+                return i;
+            }
+	}
+        else
+            break;
     }
     return -1;
 }
@@ -109,5 +136,9 @@ void dump()
     {
         printf("%s\n", symbolTable[i]);
     }
-    
+}
+void clear()
+{
+    for(int i = 0;i<ID_LEN;i++)
+        ident[i] = '\0';
 }
