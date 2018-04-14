@@ -5,10 +5,14 @@
 #define tokenString(t,s) {LIST; printf("<%s:%s>\n",t,s);}
 
 #define MAX_LINE_LENG 256
-
+#define MAX_TOKEN 10000
+char* symbolTable[MAX_TOKEN];
+int symbolCount = 0;
 int linenum = 1;
 char buf[MAX_LINE_LENG];
-
+void insert(char* s);
+void dump();
+int lookUP(char* s);
 %}
 %x COMMENT
 %x comment
@@ -21,7 +25,7 @@ char buf[MAX_LINE_LENG];
 
 "fn"	{token("FN");}
 "println"	{token("PRINTLN")}
-"main"	{tokenString("id","main");}
+"main"	{tokenString("id","main");insert("main");}
 
 \"(\\.|[^"\\])*\"	{tokenString("string",yytext)}
 "/*"	{BEGIN(COMMENT);}
@@ -49,3 +53,44 @@ char buf[MAX_LINE_LENG];
         }
 %%
 
+int main(int argc, char *argv[]) {
+//create();
+/*
+* call yylex to use the generated lexer
+*/
+yylex();
+/*
+* make sure everything was printed
+*/
+fflush(yyout);
+printf("\nSymbol Table: \n");
+dump(symbolTable); 	
+exit(0);
+}
+
+int lookUp(char* s)
+{
+    for(int i = 0;i<MAX_TOKEN;i++)
+    {
+        if(symbolTable[i] == s)
+        {
+            return i;
+        }
+    }
+}
+
+void insert(char* s)
+{
+    if(symbolCount<MAX_TOKEN)
+        symbolTable[symbolCount++] = s;
+    else
+        printf("Error! Symbol Table is full");
+}
+void dump()
+{
+    for(int i = 0;i < symbolCount;i++)
+    {
+        printf("%s\n", symbolTable[i]);
+    }
+    
+}
