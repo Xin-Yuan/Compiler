@@ -72,8 +72,9 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 "loop"	{token("LOOP");}
 "in"	{token("IN");}
 "for"	{token("FOR");}
+"true"	{token("TRUE");}
 "false"	{token("FALSE");}
-"exturn"	{token("EXTERN");}
+"extern"	{token("EXTERN");}
 "enum"	{token("ENUM");}
 "do"	{token("DO");}
 "continue"	{token("CONTINUE");}
@@ -95,13 +96,13 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 
 [A-Za-z][A-Za-z0-9]* {ident = strdup(yytext);insert(ident);tokenString("id", yytext);}
 [0-9]+	{tokenInteger("Integer",yytext);}
-(([0-9]+)|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real number", yytext);}
+([-+]?([0-9]+\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real", yytext);}
 
 ["]	{LIST;BEGIN(STRING);}
 <STRING>[^"]	{LIST;STR;}
 <STRING>["]["]	{LIST;yytext="\"";STR;}
 <STRING>["]	{tokenString("string",strbuf);strbuf[0]='\0';BEGIN(INITIAL);}	
- /*\"(\\.|[^"\\])*\"	{tempstr = malloc((yyleng-2)*sizeof(char));memcpy(tempstr,yytext+1,yyleng-2);tokenString("string",tempstr);}*/
+
 "/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
 <COMMENT>"*/\n"	{ECHO;BEGIN(INITIAL);}
 <COMMENT>\n	{
