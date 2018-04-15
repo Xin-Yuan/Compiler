@@ -21,6 +21,7 @@ int lookUP(char* s);
 %}
 %x COMMENT
 %x comment
+%s string
 variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
 "("     {token("'('");}
@@ -30,8 +31,58 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 ";"	{token("';'");}
 ":"	{token("':'");}
 ","	{token("','");}
-"->"	{token("'->'");}
+"["	{token("'['");}
+"]"	{token("']'");}
 
+"+"	{token("'+'");}
+"-"	{token("'-'");}
+"*"	{token("'*'");}
+"/"	{token("'/'");}
+"++"	{token("'++'");}
+"--"	{token("'--'");}
+"%"	{token("'%'");}
+
+"=="	{token("'=='");}
+"!="	{token("'!='");}
+">"	{token("'>'");}
+"<"	{token("'<'");}
+">="	{token("'>='");}
+"<="	{token("'<='");}
+
+"&&"	{token("'&&'");}
+"||"	{token("'||'");}
+"!"	{token("'!'");}
+"="	{token("'='");}
+"+="	{token("'+='");}
+"-="	{token("'-='");}
+"*="	{token("'*='");}
+"/="	{token("'/='");}
+
+"where"	{token("WHERE");}
+"use"	{token("USE");}
+"struct"	{token("STRUCT");}
+"str"	{token("STR");}
+"static"	{token("STATIC");}
+"self"	{token("SELF");}
+"pub"	{token("PUB");}
+"match"	{token("MATCH");}
+"loop"	{token("LOOP");}
+"in"	{token("IN");}
+"for"	{token("FOR");}
+"false"	{token("FALSE");}
+"exturn"	{token("EXTERN");}
+"enum"	{token("ENUM");}
+"do"	{token("DO");}
+"continue"	{token("CONTINUE");}
+"char"	{token("CHAR");}
+"break"	{token("BREAK");}
+"bool"	{token("BOOL");}
+"fn"	{token("FN");}
+"println"	{token("PRINTLN")}
+"print"	{token("PRINT");}
+"let"	{token("LET");}
+"mut"	{token("MUT");}
+"main"	{tokenString("id","main");insert("main");}
 "int"	{token("INT");}
 "float"	{token("FLOAT");}
 "if"	{token("IF");}
@@ -39,27 +90,13 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 "else"  {token("ELSE");}
 "return"    {token("RETURN");}
 
-"+"	{token("+");}
-"-"	{token("-");}
-
-"="	{token("'='");}
-">"	{token("'>'");}
-"<"	{token("'<'");}
-">="	{token(">=");}
-"<="	{token("<=");}
-
-"fn"	{token("FN");}
-"println"	{token("PRINTLN")}
-"print"	{token("PRINT");}
-"let"	{token("LET");}
-"mut"	{token("MUT");}
-"main"	{tokenString("id","main");insert("main");}
-
-[A-Za-z][A-Za-z0-9]* {tempstr = malloc(ID_LEN*sizeof(char));strcpy(tempstr,yytext);ident = tempstr;insert(ident);tokenString("id", yytext);}
-[0-9]+	{tokenInteger("Integer",yytext)}
-\"(\\.|[^"\\])*\"	{tokenString("string",yytext)}
+[A-Za-z][A-Za-z0-9]* {ident = strdup(yytext);insert(ident);tokenString("id", yytext);}
+-?[0-9]+	{tokenInteger("Integer",yytext);}
+-?(([0-9]+)|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real number", yytext);}
+	
+\"(\\.|[^"\\])*\"	{tempstr = malloc((yyleng-2)*sizeof(char));memcpy(tempstr,yytext+1,yyleng-2);tokenString("string",tempstr);}
 "/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
-<COMMENT>"*/"	{ECHO;BEGIN(INITIAL);printf("\n");}
+<COMMENT>"*/\n"	{ECHO;BEGIN(INITIAL);}
 <COMMENT>\n	{
     		ECHO;
         	printf("%d: ", linenum++);
@@ -85,7 +122,6 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
 
 int main(int argc, char *argv[]) {
-//create();
 /*
 * call yylex to use the generated lexer
 */
@@ -137,8 +173,4 @@ void dump()
         printf("%s\n", symbolTable[i]);
     }
 }
-void clear()
-{
-    for(int i = 0;i<ID_LEN;i++)
-        ident[i] = '\0';
-}
+
