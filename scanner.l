@@ -94,8 +94,8 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 "return"    {token("RETURN");}
 
 [A-Za-z][A-Za-z0-9]* {ident = strdup(yytext);insert(ident);tokenString("id", yytext);}
--?[0-9]+	{tokenInteger("Integer",yytext);}
--?(([0-9]+)|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real number", yytext);}
+[0-9]+	{tokenInteger("Integer",yytext);}
+(([0-9]+)|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real number", yytext);}
 
 ["]	{LIST;BEGIN(STRING);}
 <STRING>[^"]	{LIST;STR;}
