@@ -24,7 +24,7 @@ int lookUP(char* s);
 %}
 %x COMMENT
 %x comment
-%s string
+%x STRING
 variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
 "("     {token("'('");}
@@ -97,11 +97,11 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
 -?[0-9]+	{tokenInteger("Integer",yytext);}
 -?(([0-9]+)|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real number", yytext);}
 
-\"	{LIST;BEGIN(string);}
-<string>[^"]	{LIST;STR;}
-<string>\"\"	{LIST;yytext="\"";STR;}
-<string>\"	{LIST;tokenString("string",strbuf);strbuf[0]='\0';}	
-\"(\\.|[^"\\])*\"	{tempstr = malloc((yyleng-2)*sizeof(char));memcpy(tempstr,yytext+1,yyleng-2);tokenString("string",tempstr);}
+["]	{LIST;BEGIN(STRING);}
+<STRING>[^"]	{LIST;STR;}
+<STRING>["]["]	{LIST;yytext="\"";STR;}
+<STRING>["]	{tokenString("string",strbuf);strbuf[0]='\0';BEGIN(INITIAL);}	
+ /*\"(\\.|[^"\\])*\"	{tempstr = malloc((yyleng-2)*sizeof(char));memcpy(tempstr,yytext+1,yyleng-2);tokenString("string",tempstr);}*/
 "/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
 <COMMENT>"*/\n"	{ECHO;BEGIN(INITIAL);}
 <COMMENT>\n	{
