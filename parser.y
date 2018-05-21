@@ -9,10 +9,11 @@ extern FILE * yyin;
 int yylex();
 %}
 
-/* tokens */
+/* union types */
 %union {float f; int i; int b; char* s;}
 %token SEMICOLON
 
+/* tokens */
 %token DOUBLEPLUS
 %token DOUBLEMINUS
 %token EQUAL
@@ -62,11 +63,13 @@ int yylex();
 %token <s> STRING_CONST
 %token RETTYPE
 
+/* type for nonterminals */
 %type <s> return_type
 %type <s> type
 %type <s> type_op
 %type <s> const_exp
 
+/* precedences */
 %left OR
 %left AND
 %left '!'
@@ -76,14 +79,17 @@ int yylex();
 %left '^'
 %nonassoc UMINUS UPLUS
 
-%%
+%start program
 
+%%
+/* begin program */
 program:        {create("GLOBAL");}var_const_declare func_declare func_declare_op
                 {
                 Trace("Reducing to program\n");
 		dump();
                 }
                 ;
+/* grammar of variable and constants declare */
 var_const_declare:  
 		var_declare  
 		|const_declare  var_const_declare
@@ -105,6 +111,7 @@ type:	INT {$$ = $1;} | BOOL {$$ = $1;}| S {$$ = $1;}| FLOAT {$$ = $1;};
 
 const_exp:	INT_CONST{$$ = $1;} | BOOL_CONST{$$ = $1;} | STRING_CONST{$$ = $1;} | REAL_CONST{$$ = $1;};
 
+/* grammar of function declare */
 func_declare:	FN ID  '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{'  var_const_declare statements '}'{dump();} func_declare_op;
 
 func_declare_op:	FN ID '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{' var_const_declare statements '}' {dump();}
@@ -117,6 +124,7 @@ return_type:	RETTYPE type {$$ = $2;}
 		| {$$ = NULL;}
 		;
 
+/* grammar of statement */
 statements:	statement statements |; 
 statement:	simple | block | conditional | loop | fn_invok |;
 

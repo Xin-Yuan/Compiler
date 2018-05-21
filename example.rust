@@ -5,7 +5,7 @@
 // variables
 
 let mut b[int, 10] = 10;
-let mut c:float = 1.6;
+let mut c:float;
 let a = "ppp";
 let mut c:float = 1.1;
     
