@@ -154,7 +154,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 21 "parser.y" /* yacc.c:1909  */
+#line 13 "parser.y" /* yacc.c:1909  */
 float f; int i; int b; char* s;
 
 #line 161 "y.tab.h" /* yacc.c:1909  */

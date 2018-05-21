@@ -3,11 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "symtab.h"
-//#include <iostream>
-//#include <vector>
-//#include <string>
+
 #include "y.tab.h"
-//using namespace std;
+
 #define LIST     strcat(buf,yytext)
 #define STR	strcat(strbuf,yytext)
 #define token(t) {LIST; printf("<%s>\n",t);}
@@ -33,6 +31,7 @@ char strbuf[MAX_STR_LEN];
 %x STRING
 variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
+
 "("     {token("'('"); return yytext[0];}
 ")"	{token("')'"); return yytext[0];}
 "{"	{token("'{'"); return yytext[0]; create("test");}
@@ -136,18 +135,6 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
         }
 %%
 int yywrap(){return 1;}
-//int main(int argc, char *argv[]) {
-/*
-* call yylex to use the generated lexer
-*/
-//yylex();
-/*
-* make sure everything was printed
-*/
-/*fflush(yyout);
-printf("\nSymbol Table: \n");
-dump(); 	
-exit(0);
-}*/
+
 
 

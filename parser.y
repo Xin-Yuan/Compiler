@@ -5,14 +5,6 @@
 #include <stdlib.h>
 #include "symtab.h"
 
-//#include <iostream>
-//#include <vector>
-//#include <string>
-//#include "lex.yy.cpp"
-//using namespace std;
-typedef unsigned int bool; 
-#define false 0
-#define true 1
 extern FILE * yyin;
 int yylex();
 %}
@@ -70,6 +62,7 @@ int yylex();
 %token <s> STRING_CONST
 %token RETTYPE
 
+%type <s> return_type
 %type <s> type
 %type <s> type_op
 %type <s> const_exp
@@ -102,7 +95,8 @@ var_declare:	LET MUT ID type_op '=' const_exp ';' {if($4 == NULL)insert($3,"null
 		;
 const_declare:	LET ID type_op '=' const_exp ';' {if($3 == NULL)insert($2,"null",$5, 0); else insert($2, $3, $5, 0);}var_const_declare 
 		;
-array_declare:	LET MUT ID '['type',' INT_CONST']'';' {char* type = strdup($5); strcat(type, " array");insert($3,"array", $5,1);}var_const_declare 
+array_declare:	LET MUT ID '['type',' INT_CONST']'';' {char* type = strdup($5); strcat(type, "_array");insert($3,type, "null",1);}var_const_declare
+		| LET MUT ID '['type',' INT_CONST']''=' const_exp';'{char* type = strdup($5); strcat(type, "_array");insert($3,type, $10,1);}var_const_declare
 		;
 type_op:	':' type {$$ = $2;}
 		| {$$ = NULL;}
@@ -111,16 +105,16 @@ type:	INT {$$ = $1;} | BOOL {$$ = $1;}| S {$$ = $1;}| FLOAT {$$ = $1;};
 
 const_exp:	INT_CONST{$$ = $1;} | BOOL_CONST{$$ = $1;} | STRING_CONST{$$ = $1;} | REAL_CONST{$$ = $1;};
 
-func_declare:	FN ID {create($2);} '(' arguments ')' return_type '{'  var_const_declare statements '}'{dump();};
+func_declare:	FN ID  '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{'  var_const_declare statements '}'{dump();} func_declare_op;
 
-func_declare_op:	FN ID '(' arguments ')' return_type '{' var_const_declare statements '}' 
+func_declare_op:	FN ID '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{' var_const_declare statements '}' {dump();}
 			| func_declare_op
 			|;
 
 arguments:	ID ':' type {insert($1,$3,"null", 2);}| arguments ',' arguments |;
 
-return_type:	RETTYPE type
-		|
+return_type:	RETTYPE type {$$ = $2;}
+		| {$$ = NULL;}
 		;
 
 statements:	statement statements |; 
@@ -180,8 +174,7 @@ conditional:	IF '(' bool_expression ')' block ELSE block
 		| IF '(' bool_expression ')' block
 		;
 
-bool_expression:	expression;	
-/*ID
+bool_expression:	ID
 			| '-' bool_expression %prec UMINUS
 			| '(' bool_expression ')'
 			| const_exp
@@ -199,7 +192,7 @@ bool_expression:	expression;
 			| bool_expression NOTEQUAL bool_expression
 			| '!' bool_expression
 			| bool_expression AND bool_expression
-			| bool_expression OR bool_expression*/
+			| bool_expression OR bool_expression
 			;
 
 loop:	WHILE '(' bool_expression ')' block;
@@ -210,125 +203,6 @@ comma_seperate_expression:	expression
 				|comma_seperate_expression ',' comma_seperate_expression
 				|
 				;
-/*statements:	statement statements
-		|
-		;
-statement:	ID '=' expression ';'
-		|ID '[' int_expression ']' '=' expression ';'
-		|PRINT expression ';'
-		|PRINTLN expression ';'
-		|RETURN expression ';'
-		;
-expression:	'(' expression ')'	
-		|operator
-		|operator '='  expression	
-		|expression '+' expression
-		|expression '-' expression
-		|expression '*' expression
-		|expression '/' expression
-		;
-operator:	ID
-		|BOOL_CONST
-		|INT_CONST
-		|REAL_CONST
-		|STRING_CONST
-		;
-int_expression:	ID;
-
-/*semi:           SEMICOLON
-                {
-                Trace("Reducing to semi\n");
-                }
-                ;*/
-/*program:        var_const_declare func_declare
-		|func_declare
-                {
-                Trace("Reducing to program\n");
-                }
-                ;
-var_const_declare: 
-		var_const_declare var_const_declare
-		|var_declare ';'
-		|const_declare
-		|array_declare
-		;
-var_declare:	var_const_declare
-		|LET MUT ID '=' STRING_CONST ';' var_const_declare 
-		|LET MUT ID '=' INT_CONST ';' var_const_declare 
-		|LET MUT ID '=' BOOL_CONST ';' var_const_declare 
-		|LET MUT ID '=' REAL_CONST ';' var_const_declare 
-		|LET MUT ID ';' var_const_declare 
-		|LET MUT ID ':' FLOAT ';' var_const_declare 
-		|LET MUT ID ':' BOOL ';' var_const_declare 
-		|LET MUT ID ':' INT ';' var_const_declare 
-		|LET MUT ID ':' BOOL '=' BOOL_CONST ';' var_const_declare 
-		|LET MUT ID ':' FLOAT '=' REAL_CONST ';' var_const_declare
-		|LET MUT ID ':' INT '=' INT_CONST ';' var_const_declare 
-		|LET MUT ID '[' INT ',' INT_CONST ']' ';' var_const_declare 
-		|LET MUT ID '[' FLOAT ',' INT_CONST ']' ';' var_const_declare 
-		|LET MUT ID '[' BOOL ',' INT_CONST ']' ';' var_const_declare 
-		;
-const_declare:	var_const_declare
-		|LET ID '=' BOOL_CONST ';' var_const_declare 
-		|LET ID '=' INT_CONST ';' var_const_declare 
-		|LET ID '=' REAL_CONST ';' var_const_declare 
-		|LET ID '=' STRING_CONST ';' var_const_declare 
-		|LET ID ':' BOOL '=' BOOL_CONST ';' var_const_declare 
-		|LET ID ':' INT '=' INT_CONST ';'var_const_declare 
-		|LET ID ':' FLOAT '=' REAL_CONST ';' var_const_declare 
-		;
-
-
-func_declare: 	FN ID '(' arguments ')' return_type func_body
-		| func_declare
-		;
-
-arguments:	ID ':' INT ',' arguments
-		|ID ':' FLOAT ',' arguments
-		|ID ':' BOOL ',' arguments
-		|ID ':' S ',' arguments
-		|
-		;
-
-return_type:	RETTYPE INT
-		| RETTYPE BOOL
-		| RETTYPE FLOAT
-		| RETTYPE S
-		|
-		;
-func_body:	'{' var_const_declare statements '}'
-		;
-
-statements:	statement statements
-		|
-		;
-statement:	ID '=' expression ';'
-		|ID '[' int_expression ']' '=' expression ';'
-		|PRINT expression ';'
-		|PRINTLN expression ';'
-		|RETURN expression ';'
-		;
-expression:	'(' expression ')'	
-		|operator
-		|operator '='  expression	
-		|expression '+' expression
-		|expression '-' expression
-		|expression '*' expression
-		|expression '/' expression
-		;
-operator:	ID
-		|BOOL_CONST
-		|INT_CONST
-		|REAL_CONST
-		|STRING_CONST
-		;
-int_expression:	ID;
-
-/*semi:           SEMICOLON
-                {
-                Trace("Reducing to semi\n");
-                }
-                ;*/
 %%
 
 
@@ -350,7 +224,7 @@ int main(int argc, char* argv[])
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
-    return yyparse();
+    //return yyparse();
 }
 
 

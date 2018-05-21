@@ -4,7 +4,7 @@
 
 // variables
 
-let mut b[int, 10];
+let mut b[int, 10] = 10;
 let mut c:float = 1.6;
 let a = "ppp";
 let mut c:float = 1.1;
@@ -16,7 +16,12 @@ fn add(a:int, b:int) -> int
   a = a + 1;
   return a+b;
 }
-  
+fn bh(a:int, b:int) -> int
+{
+  let mut c:float = 1;
+  a = a + 1;
+  return a+b;
+}
 // main function
 fn main() 
 {

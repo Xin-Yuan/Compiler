@@ -35,6 +35,21 @@ void insert(char* name, char* type, char* val, int var_or_const)
 		target_table->size++;
 		target_table->table[index].name = strdup(name);
 		target_table->table[index].type = strdup(type);
+		if (!strcmp("bool_array", type))
+		{
+			if (!strcmp("true", val))
+				target_table->table[index].b_val = 1;
+			else
+				target_table->table[index].b_val = 0;
+		}
+		if (!strcmp("void", type))
+			target_table->table[index].s_val = strdup(val);
+		if (!strcmp("int_array", type))
+			target_table->table[index].i_val = atoi(val);
+		if (!strcmp("str_array", type))
+			target_table->table[index].s_val = strdup(val);
+		if (!strcmp("float_array", type))
+			target_table->table[index].f_val = atof(val);
 		if (!strcmp("null", type))
 			target_table->table[index].s_val = strdup(val);
 		if (!strcmp("array", type))
@@ -71,11 +86,27 @@ void dump()
 		printf("%s %d: \n", ans.scope, blocknum);
 	else
 		printf("%s : \n", ans.scope);
-	printf("ID\t\tValue\t\tType\t\tConst_or_Variable\n");
+	printf("ID\t\tValue\t\tType\t\tProperty\n");
 	printf("------------------------------------------------------\n");
 	for (int i = 0; i < ans.size; i++)
 	{
+		
 		printf("%s\t\t", ans.table[i].name);
+		if (!strcmp("void", ans.table[i].type))
+			printf("%s\t\t", ans.table[i].s_val);
+		if (!strcmp("int_array", ans.table[i].type))
+			printf("%d\t\t", ans.table[i].i_val);
+		if (!strcmp("float_array", ans.table[i].type))
+			printf("%f\t\t", ans.table[i].f_val);
+		if (!strcmp("str_array", ans.table[i].type))
+			printf("%s\t\t", ans.table[i].s_val);
+		if (!strcmp("bool_array", ans.table[i].type))
+		{
+			if (ans.table[i].b_val == 1)
+				printf("true\t\t");
+			else
+				printf("false\t\t");
+		}
 		if (!strcmp("null", ans.table[i].type))
 			printf("%s\t\t", ans.table[i].s_val);
 		if (!strcmp("array", ans.table[i].type))
@@ -99,6 +130,7 @@ void dump()
 		case 0: printf("constant\n"); break;
 		case 1: printf("variable\n"); break;
 		case 2: printf("parameter\n"); break;
+		case 3: printf("procedure\n"); break;
 		}
 
 	}
