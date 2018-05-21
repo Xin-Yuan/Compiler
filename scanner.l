@@ -1,6 +1,13 @@
 %{
+
 #include <stdio.h>
 #include <string.h>
+#include "symtab.h"
+//#include <iostream>
+//#include <vector>
+//#include <string>
+#include "y.tab.h"
+//using namespace std;
 #define LIST     strcat(buf,yytext)
 #define STR	strcat(strbuf,yytext)
 #define token(t) {LIST; printf("<%s>\n",t);}
@@ -18,90 +25,90 @@ int symbolCount = 0;
 int linenum = 1;
 char buf[MAX_LINE_LENG];
 char strbuf[MAX_STR_LEN];
-void insert(char* s);
-void dump();
-int lookUP(char* s);
+
 %}
+
 %x COMMENT
 %x comment
 %x STRING
 variable [A-Za-Z]+([A-Za-z]|[0-9])*
 %%
-"("     {token("'('");}
-")"	{token("')'");}
-"{"	{token("'{'");}
-"}"	{token("'}'");}
-";"	{token("';'");}
-":"	{token("':'");}
-","	{token("','");}
-"["	{token("'['");}
-"]"	{token("']'");}
+"("     {token("'('"); return yytext[0];}
+")"	{token("')'"); return yytext[0];}
+"{"	{token("'{'"); return yytext[0]; create("test");}
+"}"	{token("'}'"); return yytext[0];dump();}
+";"	{token("';'"); return yytext[0];}
+":"	{token("':'"); return yytext[0];}
+","	{token("','"); return yytext[0];}
+"["	{token("'['"); return yytext[0];}
+"]"	{token("']'"); return yytext[0];}
 
-"+"	{token("'+'");}
-"-"	{token("'-'");}
-"*"	{token("'*'");}
-"/"	{token("'/'");}
-"++"	{token("'++'");}
-"--"	{token("'--'");}
-"%"	{token("'%'");}
+"+"	{token("'+'"); return yytext[0];}
+"-"	{token("'-'"); return yytext[0];}
+"*"	{token("'*'"); return yytext[0];}
+"/"	{token("'/'"); return yytext[0];}
+"++"	{token("'++'"); return DOUBLEPLUS;}
+"--"	{token("'--'"); return DOUBLEMINUS;}
+"%"	{token("'%'"); return yytext[0];}
 
-"=="	{token("'=='");}
-"!="	{token("'!='");}
-">"	{token("'>'");}
-"<"	{token("'<'");}
-">="	{token("'>='");}
-"<="	{token("'<='");}
+"=="	{token("'=='"); return EQUAL;}
+"!="	{token("'!='"); return NOTEQUAL;}
+">"	{token("'>'"); return yytext[0];}
+"<"	{token("'<'"); return yytext[0];}
+">="	{token("'>='"); return GREATEREQUAL;}
+"<="	{token("'<='"); return LESSEQUAL;}
+"->"	{token("'->'"); return RETTYPE;}
 
-"&&"	{token("'&&'");}
-"||"	{token("'||'");}
-"!"	{token("'!'");}
-"="	{token("'='");}
-"+="	{token("'+='");}
-"-="	{token("'-='");}
-"*="	{token("'*='");}
-"/="	{token("'/='");}
+"&&"	{token("'&&'"); return AND;}
+"||"	{token("'||'"); return OR;}
+"!"	{token("'!'"); return yytext[0];}
+"="	{token("'='"); return yytext[0];}
+"+="	{token("'+='"); return PLUSEQUAL;}
+"-="	{token("'-='"); return MINUSEQUAL;}
+"*="	{token("'*='"); return TIMEEQUAL;}
+"/="	{token("'/='"); return DIVIDEQUAL;}
 
-"where"	{token("WHERE");}
-"use"	{token("USE");}
-"struct"	{token("STRUCT");}
-"str"	{token("STR");}
-"static"	{token("STATIC");}
-"self"	{token("SELF");}
-"pub"	{token("PUB");}
-"match"	{token("MATCH");}
-"loop"	{token("LOOP");}
-"in"	{token("IN");}
-"for"	{token("FOR");}
-"true"	{token("TRUE");}
-"false"	{token("FALSE");}
-"extern"	{token("EXTERN");}
-"enum"	{token("ENUM");}
-"do"	{token("DO");}
-"continue"	{token("CONTINUE");}
-"char"	{token("CHAR");}
-"break"	{token("BREAK");}
-"bool"	{token("BOOL");}
-"fn"	{token("FN");}
-"println"	{token("PRINTLN")}
-"print"	{token("PRINT");}
-"let"	{token("LET");}
-"mut"	{token("MUT");}
-"main"	{tokenString("id","main");insert("main");}
-"int"	{token("INT");}
-"float"	{token("FLOAT");}
-"if"	{token("IF");}
-"while"	{token("WHILE");}
-"else"  {token("ELSE");}
-"return"    {token("RETURN");}
+"where"	{token("WHERE"); return WHERE;}
+"use"	{token("USE"); return USE;}
+"struct"	{token("STRUCT"); return STRUCT;}
+"str"	{token("STR"); yylval.s = "str";return S;}
+"static"	{token("STATIC"); return STATIC;}
+"self"	{token("SELF"); return SELF;}
+"pub"	{token("PUB"); return PUB;}
+"match"	{token("MATCH"); return MATCH;}
+"loop"	{token("LOOP"); return LOOP;}
+"in"	{token("IN"); return IN;}
+"for"	{token("FOR"); return FOR;}
+"true"	{tokenString("boolean","TRUE"); yylval.s = 1; return BOOL_CONST;}
+"false"	{tokenString("boolean","FALSE"); yylval.s = 0; return BOOL_CONST;}
+"extern"	{token("EXTERN"); return EXTERN;}
+"enum"	{token("ENUM"); return ENUM;}
+"do"	{token("DO"); return DO;}
+"continue"	{token("CONTINUE");return CONTINUE;}
+"char"	{token("CHAR"); return CHAR;}
+"break"	{token("BREAK"); return BREAK;}
+"bool"	{token("BOOL");yylval.s = "bool"; return BOOL;}
+"fn"	{token("FN"); return FN;}
+"println"	{token("PRINTLN"); return PRINTLN;}
+"print"	{token("PRINT"); return PRINT;}
+"let"	{token("LET"); return LET;}
+"mut"	{token("MUT"); return MUT;}
+"main"	{tokenString("id","main"); yylval.s = "main"; return ID;}
+"int"	{token("INT"); yylval.s = "int"; return INT;}
+"float"	{token("FLOAT"); yylval.s = "float"; return FLOAT;}
+"if"	{token("IF"); return IF;}
+"while"	{token("WHILE"); return WHILE;}
+"else"  {token("ELSE"); return ELSE;}
+"return"    {token("RETURN"); return RETURN;}
 
-[A-Za-z][A-Za-z0-9]* {ident = strdup(yytext);insert(ident);tokenString("id", yytext);}
-[0-9]+	{tokenInteger("Integer",yytext);}
-([-+]?([0-9]+\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real", yytext);}
+[A-Za-z][A-Za-z0-9]* {ident = strdup(yytext);tokenString("id", yytext); yylval.s = strdup(yytext); return ID;}
+[0-9]+	{tokenInteger("Integer",yytext); yylval.s = strdup(yytext); return INT_CONST;}
+([-+]?([0-9]+\.[0-9]+)([eE][-+]?[0-9]+)?)	{tokenInteger("Real", yytext); yylval.s = strdup(yytext); return REAL_CONST;}
 
 ["]	{LIST;BEGIN(STRING);}
 <STRING>[^"]	{LIST;STR;}
 <STRING>["]["]	{LIST;yytext="\"";STR;}
-<STRING>["]	{tokenString("string",strbuf);strbuf[0]='\0';BEGIN(INITIAL);}	
+<STRING>["]	{tokenString("string",strbuf); BEGIN(INITIAL); yylval.s = strdup(strbuf); strbuf[0]='\0';return STRING_CONST;}	
 
 "/*"	{printf("%d: ", linenum++);ECHO;BEGIN(COMMENT);}
 <COMMENT>"*/\n"	{ECHO;BEGIN(INITIAL);}
@@ -128,57 +135,19 @@ variable [A-Za-Z]+([A-Za-z]|[0-9])*
         exit(-1);
         }
 %%
-
-int main(int argc, char *argv[]) {
+int yywrap(){return 1;}
+//int main(int argc, char *argv[]) {
 /*
 * call yylex to use the generated lexer
 */
-yylex();
+//yylex();
 /*
 * make sure everything was printed
 */
-fflush(yyout);
+/*fflush(yyout);
 printf("\nSymbol Table: \n");
 dump(); 	
 exit(0);
-}
+}*/
 
-int lookUp(char* s)
-{
-    for(int i = 0;i<MAX_TOKEN;i++)
-    {
-        if(symbolTable[i]!=NULL)
-	{
-            if(!strcmp(symbolTable[i],s))
-            {
-                return i;
-            }
-	}
-        else
-            break;
-    }
-    return -1;
-}
-
-void insert(char* s)
-{
-    if(symbolCount<MAX_TOKEN)
-    {
-        if(lookUp(s)!=-1)
-        {
-           
-        }
-        else
-          symbolTable[symbolCount++] = s;
-    }
-    else
-        printf("Error! Symbol Table is full");
-}
-void dump()
-{
-    for(int i = 0;i < symbolCount;i++)
-    {
-        printf("%s\n", symbolTable[i]);
-    }
-}
 

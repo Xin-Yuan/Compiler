@@ -3,15 +3,20 @@
  */
 
 // variables
-let mut c;
-let mut a = 5;
+
+let mut b[int, 10];
+let mut c:float = 1.6;
+let a = "ppp";
+let mut c:float = 1.1;
     
 // function declaration
 fn add(a:int, b:int) -> int
 {
+  let mut c:float = 1;
+  a = a + 1;
   return a+b;
 }
-    
+  
 // main function
 fn main() 
 {
@@ -24,3 +29,4 @@ fn main()
   }
   println ("Hello World");
 }
+
