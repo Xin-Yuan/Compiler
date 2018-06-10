@@ -1,0 +1,103 @@
+class example
+{
+field static int c
+field static int a = 5
+method public static int add(int,int)
+max_stack 15
+max_locals 15
+{
+iload 0
+iload 1
+iadd
+ireturn
+}
+method public static void main(java.lang.String[])
+max_stack 15
+max_locals 15
+{
+sipush 1
+istore 0
+nop
+L1:
+iload 0
+sipush 10
+isub
+ifle L2
+iconst_0
+goto L3
+nop
+L2:
+iconst_1
+nop
+L3:
+ifeq L4
+iload 0
+sipush 1
+iadd
+istore 0
+getstatic java.io.PrintStream java.lang.System.out
+iload 0
+invokevirtual void java.io.PrintStream.println(int)
+goto L1
+nop
+L4:
+sipush 1
+istore 1
+nop
+L5:
+iload 1
+sipush 10
+isub
+ifle L6
+iconst_0
+goto L7
+nop
+L6:
+iconst_1
+nop
+L7:
+ifeq L8
+iload 1
+sipush 1
+iadd
+istore 1
+getstatic java.io.PrintStream java.lang.System.out
+iload 1
+invokevirtual void java.io.PrintStream.println(int)
+goto L5
+nop
+L8:
+getstatic int example.a
+sipush 10
+invokestatic int example.add(int,int)
+putstatic int example.c
+getstatic int example.c
+sipush 10
+isub
+ifgt L9
+iconst_0
+goto L10
+nop
+L9:
+iconst_1
+nop
+L10:
+ifeq L11
+getstatic java.io.PrintStream java.lang.System.out
+getstatic int example.c
+ineg
+invokevirtual void java.io.PrintStream.print(int)
+goto L12
+nop
+L11:
+getstatic java.io.PrintStream java.lang.System.out
+getstatic int example.c
+invokevirtual void java.io.PrintStream.print(int)
+nop
+L12:
+getstatic java.io.PrintStream java.lang.System.out
+ldc "Hello World"
+invokevirtual void java.io.PrintStream.println(java.lang.String)
+return
+}
+}

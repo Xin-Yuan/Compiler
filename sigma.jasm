@@ -1,0 +1,44 @@
+class sigma
+{
+method public static void main(java.lang.String[])
+max_stack 15
+max_locals 15
+{
+sipush 0
+istore 0
+sipush 0
+istore 1
+nop
+L1:
+iload 1
+sipush 10
+isub
+ifle L2
+iconst_0
+goto L3
+nop
+L2:
+iconst_1
+nop
+L3:
+ifeq L4
+iload 0
+iload 1
+iadd
+istore 0
+iload 1
+sipush 1
+iadd
+istore 1
+goto L1
+nop
+L4:
+getstatic java.io.PrintStream java.lang.System.out
+ldc "The sum is "
+invokevirtual void java.io.PrintStream.print(java.lang.String)
+getstatic java.io.PrintStream java.lang.System.out
+iload 0
+invokevirtual void java.io.PrintStream.println(int)
+return
+}
+}

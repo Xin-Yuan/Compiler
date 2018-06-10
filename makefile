@@ -19,3 +19,4 @@ y.tab.c: parser.y
 
 clean:
 	$(RM) $(TARGET) lex.yy.c y.tab.*
+

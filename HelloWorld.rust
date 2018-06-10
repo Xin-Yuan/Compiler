@@ -1,5 +1,9 @@
 // Hello World Example
+let mut a = 100;
+
 fn main() {
+let mut b;
+let mut c:int = 200;
   // Print text to the console
   println ("Hello World");
 }

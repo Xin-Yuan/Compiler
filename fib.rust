@@ -5,7 +5,7 @@
 
 fn main() {
     // variables
-    let mut n:int = 8;
+    let mut n:int = 3;
     let mut Fn = 1;
     let mut FNminus1 = 1;
     let mut temp:int;
@@ -20,5 +20,5 @@ fn main() {
     
     // print result
     print "Result of computation: ";
-    println n;
+    println Fn;
 }
