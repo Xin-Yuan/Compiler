@@ -3,7 +3,45 @@
 #include <string.h>
 #include "symtab.h"
 
-
+int is_stack_empty()
+{
+	if(top == 0)
+		return 1;
+	else
+		return 0;
+}
+void enter_block()
+{
+	blockcount = 0;
+	argcount = 0;
+	printf("entering block, next number 0 \n");
+}
+void count_arg()
+{
+	argcount++;
+}
+int get_argcount()
+{
+	return argcount;
+}
+void block_var_increase(char* name, char* type)
+{
+	variable_table[blockcount].name = name;
+	variable_table[blockcount].type = type;
+	variable_table[blockcount].pos = blockcount;
+	
+	printf("%s = %d", name, blockcount++);
+	printf(", next number %d\n", blockcount);
+}
+void leave_block()
+{
+	printf("leaving block, symbol table entries: \n");
+	for(int i = 0;i < blockcount;i++)
+	{
+		printf("<%s, %s, integer, %d>\n", variable_table[i].name, variable_table[i].type, variable_table[i].pos);
+	}
+	blockcount = 0;
+}
 void push_to_stack(symbol_table table)
 {
 	top++;
@@ -29,7 +67,7 @@ void block_increase()
 void insert(char* name, char* type, char* val, int var_or_const)
 {
 	symbol_table* target_table = &symbol_table_stack[top];
-	if (lookup(*target_table, name) < 0)
+	if (lookup(name) < 0)
 	{
 		int index = target_table->size;
 		target_table->size++;
@@ -37,19 +75,16 @@ void insert(char* name, char* type, char* val, int var_or_const)
 		target_table->table[index].type = strdup(type);
 		if (!strcmp("bool_array", type))
 		{
-			if (!strcmp("true", val))
-				target_table->table[index].b_val = 1;
-			else
-				target_table->table[index].b_val = 0;
+			target_table->table[index].i_val = atoi(val);
 		}
 		if (!strcmp("void", type))
 			target_table->table[index].s_val = strdup(val);
 		if (!strcmp("int_array", type))
 			target_table->table[index].i_val = atoi(val);
 		if (!strcmp("str_array", type))
-			target_table->table[index].s_val = strdup(val);
+			target_table->table[index].i_val = atoi(val);
 		if (!strcmp("float_array", type))
-			target_table->table[index].f_val = atof(val);
+			target_table->table[index].i_val = atoi(val);
 		if (!strcmp("null", type))
 			target_table->table[index].s_val = strdup(val);
 		if (!strcmp("array", type))
@@ -70,8 +105,55 @@ void insert(char* name, char* type, char* val, int var_or_const)
 		target_table->table[index].const_or_variable = var_or_const;
 	}
 }
-int lookup(symbol_table target_table, char* name)
+void func_increase(char* name, char* type)
 {
+	func_table[func_count].name = name;
+	func_table[func_count].type = type;
+	func_count++;
+}
+void const_increase(char* name, char* value)
+{
+	const_table[const_count].name = name;
+	const_table[const_count].value = value;
+	const_count++;
+}
+char* get_const_val(char* name)
+{
+	for(int i = 0;i < const_count;i++)
+	{
+		if(!strcmp(const_table[i].name, name))
+			return const_table[i].value;
+	}
+}
+int lookup_const(char* name)
+{
+	for(int i = 0;i < const_count;i++)
+	{
+		if(!strcmp(const_table[i].name, name))
+			return i;
+	}
+	return -1;
+}
+char* get_func_type(char* name)
+{
+	for(int i = 0;i < func_count;i++)
+	{
+		if(!strcmp(func_table[i].name, name))
+			return func_table[i].type;
+	}
+}
+int lookup_var(char* name)
+{
+	for(int i = 0;i < blockcount;i++)
+	{
+		if(!strcmp(variable_table[i].name, name))
+			return i;
+	}
+	return -1;
+}
+int lookup(char* name)
+{
+	symbol_table target_table = symbol_table_stack[top];
 	for (int i = 0; i < target_table.size; i++)
 	{
 		if (!strcmp(target_table.table[i].name, name))
@@ -86,7 +168,7 @@ void dump()
 		printf("%s %d: \n", ans.scope, blocknum);
 	else
 		printf("%s : \n", ans.scope);
-	printf("ID\t\tValue\t\tType\t\tProperty\n");
+	printf("ID\t\tValue\t\tType\t\tConst_or_Variable\n");
 	printf("------------------------------------------------------\n");
 	for (int i = 0; i < ans.size; i++)
 	{
@@ -97,15 +179,12 @@ void dump()
 		if (!strcmp("int_array", ans.table[i].type))
 			printf("%d\t\t", ans.table[i].i_val);
 		if (!strcmp("float_array", ans.table[i].type))
-			printf("%f\t\t", ans.table[i].f_val);
+			printf("%d\t\t", ans.table[i].i_val);
 		if (!strcmp("str_array", ans.table[i].type))
-			printf("%s\t\t", ans.table[i].s_val);
+			printf("%d\t\t", ans.table[i].i_val);
 		if (!strcmp("bool_array", ans.table[i].type))
 		{
-			if (ans.table[i].b_val == 1)
-				printf("true\t\t");
-			else
-				printf("false\t\t");
+			printf("%d\t\t", ans.table[i].i_val);
 		}
 		if (!strcmp("null", ans.table[i].type))
 			printf("%s\t\t", ans.table[i].s_val);
@@ -136,3 +215,4 @@ void dump()
 	}
 	pop_from_stack();
 }
+

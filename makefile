@@ -1,4 +1,4 @@
-TARGET = parser
+TARGET = compiler
 LEX = lex
 YACC = yacc
 YACCFLAG = -y -d
@@ -8,8 +8,8 @@ GCC = gcc
 
 all: $(TARGET)
 
-$(TARGET): lex.yy.c y.tab.c symtab.c symtab.h 
-	$(GCC) lex.yy.c y.tab.c symtab.c -o $@ -ll
+$(TARGET): lex.yy.c y.tab.c symtab.c codegen.c codegen.h symtab.h 
+	$(GCC) lex.yy.c y.tab.c symtab.c codegen.c -o $@ -ll
 
 lex.yy.c: scanner.l
 	$(LEX) -o $@ $^

@@ -4,9 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "symtab.h"
-
+#include "codegen.h"
+char* outname;
+//strcat(outname, ".jasm");
+FILE* fout;
 extern FILE * yyin;
 int yylex();
+int var_index;
+int const_index;
+int global_declare;
+int const_flag;
+int parameter_count;
+int is_string;
 %}
 
 /* union types */
@@ -83,10 +92,11 @@ int yylex();
 
 %%
 /* begin program */
-program:        {create("GLOBAL");}var_const_declare func_declare func_declare_op
+program:        {create("GLOBAL"); genProgramStart();}var_const_declare func_declare func_declare_op
                 {
                 Trace("Reducing to program\n");
 		dump();
+				genCompoundEnd();
                 }
                 ;
 /* grammar of variable and constants declare */
@@ -96,29 +106,94 @@ var_const_declare:
 		|array_declare var_const_declare
 		|
 		;
-var_declare:	LET MUT ID type_op '=' const_exp ';' {if($4 == NULL)insert($3,"null",$6,1); else insert($3,$4,$6,1);} var_const_declare  
-		|LET MUT ID type_op ';'  {insert($3,$4,"null",1);} var_const_declare 
+var_declare: LET MUT ID type_op '=' {global_declare = is_stack_empty();} const_exp ';' 
+		{if($4 == NULL)
+			{insert($3,"int",$7,1); 
+			if(is_stack_empty())genGlobalVar($3,$7);
+			else
+			{
+				block_var_increase($3, "variable");
+				var_index = lookup_var($3);
+				genLocalVar(var_index, $7);
+			}
+			} 
+		else {insert($3,$4,$7,1); if(is_stack_empty())genGlobalVar($3,$7);
+			else
+			{
+				block_var_increase($3, "variable");
+				var_index = lookup_var($3);
+				genLocalVar(var_index, $7);
+			}}Trace("Reducing to variable declare\n");} var_const_declare  
+		|LET MUT ID type_op ';'  
+			{if($4 != NULL) 
+			{insert($3,$4,"null",1); 
+			if(is_stack_empty())genGlobalVarNoInit($3);
+			else
+				block_var_increase($3, "variable");
+			}
+			else 
+			{
+				insert($3,"int", "null", 1);
+				if(is_stack_empty())genGlobalVarNoInit($3);
+				else{
+				block_var_increase($3, "variable");
+				}
+			}
+			Trace("Reducing to variable declare\n");} var_const_declare 
 		;
-const_declare:	LET ID type_op '=' const_exp ';' {if($3 == NULL)insert($2,"null",$5, 0); else insert($2, $3, $5, 0);}var_const_declare 
+const_declare:	LET ID type_op '=' const_exp ';' {const_flag = 1; if($3 == NULL){insert($2,"null",$5, 0); const_increase($2, $5);}else {insert($2, $3, $5, 0); const_increase($2, $5);}Trace("Reducing to constant declare\n");}var_const_declare 
 		;
-array_declare:	LET MUT ID '['type',' INT_CONST']'';' {char* type = strdup($5); strcat(type, "_array");insert($3,type, "null",1);}var_const_declare
-		| LET MUT ID '['type',' INT_CONST']''=' const_exp';'{char* type = strdup($5); strcat(type, "_array");insert($3,type, $10,1);}var_const_declare
+array_declare:	LET MUT ID '['type',' INT_CONST']'';' {char* type = strdup($5); strcat(type, "_array");insert($3,type, $7,1);Trace("Reducing to array declare\n");}var_const_declare
+		| LET MUT ID '['type',' INT_CONST']''=' const_exp';'{char* type = strdup($5); strcat(type, "_array");insert($3,type, $7,1);Trace("Reducing to array declare\n");}var_const_declare
 		;
 type_op:	':' type {$$ = $2;}
 		| {$$ = NULL;}
 		;
 type:	INT {$$ = $1;} | BOOL {$$ = $1;}| S {$$ = $1;}| FLOAT {$$ = $1;};
 
-const_exp:	INT_CONST{$$ = $1;} | BOOL_CONST{$$ = $1;} | STRING_CONST{$$ = $1;} | REAL_CONST{$$ = $1;};
+const_exp:	INT_CONST{$$ = $1;  if(!(global_declare||const_flag))genConstInt($1);else {global_declare = 0; const_flag = 0;}}| BOOL_CONST{$$ = $1; if(!strcmp($1,"true"))fprintf(fout, "%s\n", "iconst_1");else fprintf(fout, "%s\n", "iconst_0"); } | STRING_CONST{$$ = $1; genConstStr($1); is_string = 1;} | REAL_CONST{$$ = $1;};
 
 /* grammar of function declare */
-func_declare:	FN ID  '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{'  var_const_declare statements '}'{dump();} func_declare_op;
+func_declare:	FN ID {enter_block();} '(' arguments ')' return_type 
+			{if($7 == NULL)
+			{
+				func_increase($2, "void");
+				insert($2,"void","-", 3);
+				int arg = get_argcount();
+				if(!strcmp($2, "main"))
+					genMainStart();
+				else
+				genFuncStart($2,"void",arg);
+			}else 
+			{	
+				func_increase($2, "int");
+				insert($2, $7, "-", 3);
+				int arg = get_argcount();
+				genFuncStart($2,"int",arg);
+			}create($2); Trace("Reducing to function declare\n");}'{'  var_const_declare statements '}'{Trace("Reducing to function body\n");dump(); leave_block();if($7!=NULL){geniReturn();}else {genReturn();}genCompoundEnd();} func_declare_op;
 
-func_declare_op:	FN ID '(' arguments ')' return_type {if($6 == NULL)insert($2,"void","-", 3);else insert($2, $6, "-", 3);create($2);}'{' var_const_declare statements '}' {dump();}
+func_declare_op:	FN ID {enter_block();} '(' arguments ')' return_type 
+			{if($7 == NULL)
+			{
+				func_increase($2, "void");
+				insert($2,"void","-", 3);
+				int arg = get_argcount();
+				if(!strcmp($2, "main"))
+					genMainStart();
+				else
+				genFuncStart($2,"void",arg);
+			}
+			else
+			{
+				func_increase($2, "int");
+				insert($2, $7, "-", 3);
+				int arg = get_argcount();
+				genFuncStart($2,"int",arg);
+			}create($2);Trace("Reducing to function declare\n");}'{' var_const_declare statements '}' {Trace("Reducing to function body\n");dump(); leave_block();if($7!=NULL){geniReturn();}else {genReturn();}genCompoundEnd();}
 			| func_declare_op
 			|;
 
-arguments:	ID ':' type {insert($1,$3,"null", 2);}| arguments ',' arguments |;
+arguments:	ID ':' type {block_var_increase($1,"arguments");insert($1,$3,"null", 2); count_arg();}| arguments ',' arguments |;
 
 return_type:	RETTYPE type {$$ = $2;}
 		| {$$ = NULL;}
@@ -126,88 +201,51 @@ return_type:	RETTYPE type {$$ = $2;}
 
 /* grammar of statement */
 statements:	statement statements |; 
-statement:	simple | block | conditional | loop | fn_invok |;
+statement:	simple {Trace("Reducing to simple statement\n");}| block {Trace("Reducing to block statement\n");} | conditional {Trace("Reducing to conditional statement\n");}| loop {Trace("Reducing to loop statement\n");}| fn_invok {Trace("Reducing to function invoke statement\n");}|;
 
-simple:	ID '=' expression ';' 
-	|ID '['int_expression']''=' expression ';'
-	| PRINT expression ';'
-	| PRINTLN expression';'
+simple:	ID '=' expression ';' {var_index = lookup_var($1); if(var_index == -1)genSetGlobalVar($1); else genSetLocalVar(var_index);} 
+	|ID '['expression']''=' expression ';'
+	|PRINT {genPrintStart();} expression ';' {if(is_string)genPrintStr();else genPrintInt(); is_string = 0;}
+	|PRINTLN {genPrintStart();} expression';' {if(is_string)genPrintlnStr();else genPrintlnInt(); is_string = 0;}
 	| RETURN ';'
 	| RETURN expression ';'
 	;
-expression:	ID
-		| '-' expression %prec UMINUS
+expression:	ID	{ var_index = lookup_var($1); const_index = lookup_const($1); if(var_index != -1)genGetLocalVar(var_index);else if (const_index!=-1)genConstInt(get_const_val($1)); else genGetGlobalVar($1);}
+		| '-' expression %prec UMINUS {genOperator('_');}
 		| '(' expression ')'
 		| const_exp
 		| fn_invok
-		| ID '[' int_expression ']'
-		| expression '+' expression
-		| expression '-' expression
-		| expression '*' expression
-		| expression '/' expression
-		| expression '<' expression
-		| expression '>' expression
-		| expression EQUAL expression
-		| expression LESSEQUAL expression
-		| expression GREATEREQUAL expression
-		| expression NOTEQUAL expression
-		| '!' expression
-		| expression AND expression
-		| expression OR expression
+		| ID '[' expression ']'
+		| expression '+' expression {genOperator('+');}
+		| expression '-' expression {genOperator('-');}
+		| expression '*' expression {genOperator('*');}
+		| expression '/' expression {genOperator('/');}
+		| expression '%' expression {genOperator('%');}
+		| expression '<' expression {genCondOp(IFLT);}
+		| expression '>' expression {genCondOp(IFGT);}
+		| expression EQUAL expression {genCondOp(IFEQ);}
+		| expression LESSEQUAL expression {genCondOp(IFLE);}
+		| expression GREATEREQUAL expression {genCondOp(IFGE);}
+		| expression NOTEQUAL expression {genCondOp(IFNE);}
+		| '!' expression {genOperator('!');}
+		| expression AND expression {genOperator('&');}
+		| expression OR expression {genOperator('!');}
 		;
-int_expression:	ID
-		| '-' int_expression %prec UMINUS
-		| '(' int_expression ')'
-		| INT_CONST
-		| fn_invok
-		| ID '[' int_expression ']'
-		| int_expression '+' int_expression
-		| int_expression '-' int_expression
-		| int_expression '*' int_expression
-		| int_expression '/' int_expression
-		| int_expression '<' int_expression
-		| int_expression '>' int_expression
-		| int_expression EQUAL int_expression
-		| int_expression LESSEQUAL int_expression
-		| int_expression GREATEREQUAL int_expression
-		| int_expression NOTEQUAL int_expression
-		| '!' int_expression
-		| int_expression AND int_expression
-		| int_expression OR int_expression;
 
-block:	'{' { create("block"); block_increase();} var_const_declare statements '}'{dump();}
+
+block:	'{' var_const_declare statements '}'{Trace("Reducing to block statement\n");}
 	;
 
-conditional:	IF '(' bool_expression ')' block ELSE block
-		| IF '(' bool_expression ')' block
+conditional:	IF '(' expression ')' {genIfStart();}block {genElse();}ELSE block {genIfElseEnd();}
+		| IF '(' expression ')' {genIfStart();}block {genIfEnd();}
 		;
 
-bool_expression:	ID
-			| '-' bool_expression %prec UMINUS
-			| '(' bool_expression ')'
-			| const_exp
-			| fn_invok
-			| ID '[' int_expression ']'
-			| bool_expression '+' bool_expression
-			| bool_expression '-' bool_expression
-			| bool_expression '*' bool_expression
-			| bool_expression '/' bool_expression
-			| bool_expression '<' bool_expression
-			| bool_expression '>' bool_expression
-			| bool_expression EQUAL bool_expression
-			| bool_expression LESSEQUAL bool_expression
-			| bool_expression GREATEREQUAL bool_expression
-			| bool_expression NOTEQUAL bool_expression
-			| '!' bool_expression
-			| bool_expression AND bool_expression
-			| bool_expression OR bool_expression
-			;
 
-loop:	WHILE '(' bool_expression ')' block;
+loop:	WHILE {genWhileStart();}'(' expression ')' {genWhileBody();}block{genWhileEnd();};
 
-fn_invok:	ID '(' comma_seperate_expression ')';
+fn_invok:	ID '(' comma_seperate_expression ')' {genCallFunc($1, get_func_type($1), parameter_count); parameter_count = 0;};
 
-comma_seperate_expression:	expression
+comma_seperate_expression:	expression {parameter_count++;}
 				|comma_seperate_expression ',' comma_seperate_expression
 				|
 				;
@@ -228,11 +266,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
     yyin = fopen(argv[1], "r");         /* open input file */
-
+	outname = argv[1]; outname = strtok(outname, "."); char* filename = strdup(outname); strcat(filename, ".jasm"); fout = fopen(filename, "w+t");
     /* perform parsing */
     if (yyparse() == 1)                 /* parsing */
         yyerror("Parsing error !");     /* syntax error */
     //return yyparse();
 }
+
 
 
