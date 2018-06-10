@@ -12,7 +12,7 @@ extern FILE * yyin;
 int yylex();
 int var_index;
 int const_index;
-int global_declare;
+int variable_declare;
 int const_flag;
 int parameter_count;
 int is_string;
@@ -106,7 +106,7 @@ var_const_declare:
 		|array_declare var_const_declare
 		|
 		;
-var_declare: LET MUT ID type_op '=' {global_declare = is_stack_empty();} const_exp ';' 
+var_declare: LET MUT ID type_op '=' {variable_declare = 1;} const_exp ';' 
 		{if($4 == NULL)
 			{insert($3,"int",$7,1); 
 			if(is_stack_empty())genGlobalVar($3,$7);
@@ -141,7 +141,7 @@ var_declare: LET MUT ID type_op '=' {global_declare = is_stack_empty();} const_e
 			}
 			Trace("Reducing to variable declare\n");} var_const_declare 
 		;
-const_declare:	LET ID type_op '=' const_exp ';' {const_flag = 1; if($3 == NULL){insert($2,"null",$5, 0); const_increase($2, $5);}else {insert($2, $3, $5, 0); const_increase($2, $5);}Trace("Reducing to constant declare\n");}var_const_declare 
+const_declare:	LET ID type_op '=' {const_flag = 1;} const_exp ';' { if($3 == NULL){insert($2,"null",$6, 0); const_increase($2, $6);}else {insert($2, $3, $6, 0); const_increase($2, $6);}Trace("Reducing to constant declare\n");}var_const_declare 
 		;
 array_declare:	LET MUT ID '['type',' INT_CONST']'';' {char* type = strdup($5); strcat(type, "_array");insert($3,type, $7,1);Trace("Reducing to array declare\n");}var_const_declare
 		| LET MUT ID '['type',' INT_CONST']''=' const_exp';'{char* type = strdup($5); strcat(type, "_array");insert($3,type, $7,1);Trace("Reducing to array declare\n");}var_const_declare
@@ -151,7 +151,7 @@ type_op:	':' type {$$ = $2;}
 		;
 type:	INT {$$ = $1;} | BOOL {$$ = $1;}| S {$$ = $1;}| FLOAT {$$ = $1;};
 
-const_exp:	INT_CONST{$$ = $1;  if(!(global_declare||const_flag))genConstInt($1);else {global_declare = 0; const_flag = 0;}}| BOOL_CONST{$$ = $1; if(!strcmp($1,"true"))fprintf(fout, "%s\n", "iconst_1");else fprintf(fout, "%s\n", "iconst_0"); } | STRING_CONST{$$ = $1; genConstStr($1); is_string = 1;} | REAL_CONST{$$ = $1;};
+const_exp:	INT_CONST{$$ = $1;  if(!(variable_declare||const_flag))genConstInt($1);else {variable_declare = 0; const_flag = 0;}}| BOOL_CONST{$$ = $1; if(!strcmp($1,"true"))fprintf(fout, "%s\n", "iconst_1");else fprintf(fout, "%s\n", "iconst_0"); } | STRING_CONST{$$ = $1; genConstStr($1); is_string = 1;} | REAL_CONST{$$ = $1;};
 
 /* grammar of function declare */
 func_declare:	FN ID {enter_block();} '(' arguments ')' return_type 
